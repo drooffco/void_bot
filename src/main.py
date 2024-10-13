@@ -3,9 +3,11 @@ import os
 from dotenv import load_dotenv
 from discord import Intents, Client, Message
 from responses import get_response
+from directory_root import ROOT_DIR
+from settings.project_secrets import DISCORD_TOKEN
 
-load_dotenv(f'settings/.env')
-TOKEN: Final[str] = os.getenv('DISCORD_TOKEN')
+
+
 
 intents: Intents = Intents.default()
 intents.message_content = True
@@ -45,7 +47,7 @@ async def on_message(message: Message) -> None:
 
 
 def main() -> None:
-    client.run(token=TOKEN)
+    client.run(token=DISCORD_TOKEN)
 
 
 if __name__ == '__main__':
