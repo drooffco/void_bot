@@ -1,9 +1,8 @@
 import json
 import mysql.connector
-
+import mysql.connector.cursor
 import numpy as np
 
-import mysql.connector.cursor
 from openskill.models.weng_lin.plackett_luce import PlackettLuce, PlackettLuceRating
 from settings.project_secrets import STATS_KEYS, mysql_creds
 from requests import get

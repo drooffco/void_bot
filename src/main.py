@@ -6,26 +6,12 @@ from responses import get_response
 from directory_root import ROOT_DIR
 from settings.project_secrets import DISCORD_TOKEN
 from test_ranking import rank_lobby_matches
-
-
+from read_channel_messages import get_teams_from_channel
 
 
 intents: Intents = Intents.default()
 intents.message_content = True
 client: Client =  Client(intents=intents)
-
-async def send_message(message: Message, user_message: str) -> None:
-    if not user_message:
-        print('Message was empty because intetnts were not enabled')
-
-    if is_private := user_message[0] == '?':
-        user_message = user_message[1:]
-
-    try:
-        response: str = get_response(user_message)
-        await message.author.send(response) if is_private else await message.channel.send(response)
-    except Exception as e:
-        print(e)
 
 
 @client.event
@@ -38,15 +24,35 @@ async def on_message(message: Message) -> None:
     if message.author == client.user:
         return
     
-    if '!rank' in message.content:
-        await handle_rank_request(message)
+    try:
+        
+        if '!rank' in message.content:
+            await handle_rank_request(message)
+
+        if '!create_scrim_lobbies' in message.content:
+            await handle_create_scrim_lobbies(message)
+    except ValueError as e:
+        await message.channel.send(f'Looks like that command didnt quite work ;( this was the problem:\n{e}')
 
 
     print(f'that didnt quite work try again')
     # await send_message(message, user_message)
 
 
-async def handle_rank_request(message: Message) -> None:
+def handle_create_scrim_lobbies(message: Message) -> None:
+    request = message.content.split(' ')
+
+    if len(request) > 2:
+        raise ValueError('Your rank request contained too many values please try again with the format !create_scrim_lobbies $CHANNEL_NAME')
+    
+    if not message.channel_mentions or len(message.channel_mentions) > 1:
+        raise ValueError('You must attach ONE channel in this command')
+    
+    teams = get_teams_from_channel(message.channel_mentions[0])
+    send_response_to_channel(response_text=teams, message=message)
+
+
+def handle_rank_request(message: Message) -> None:
     request = message.content.split(' ')
     if len(request) > 4:
         raise ValueError('Your rank request contained too many values please try again with the format !rank $LOBBY $NUMBER_OF_MATCHES')
@@ -56,6 +62,10 @@ async def handle_rank_request(message: Message) -> None:
     elif len(request) == 4:
         response_text = rank_lobby_matches(request[1], int(request[2]), bool(request[3]))
 
+    send_response_to_channel(response_text=response_text, message=message)
+
+
+async def send_response_to_channel(response_text: str, message: Message):
     response_list = split_string_by_newline(response_text, 1999)
     for response in response_list:
         await message.channel.send(response)
